@@ -8,7 +8,7 @@ public class EccoActionService implements ActionService {
         if (id.id().equals("Stop")) {
             return new StopAction();
         } else {
-            return new PlayAction(new Song(id.id()));
+            return new PlayAction(new Song(id.id(), id.id()));
         }
     }
 }

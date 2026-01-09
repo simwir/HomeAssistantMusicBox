@@ -11,4 +11,11 @@ public class PlayAction extends Action {
     public Song getSong() {
         return song;
     }
+
+    @Override
+    public String toString() {
+        return "PlayAction{" +
+                "song=" + song +
+                '}';
+    }
 }

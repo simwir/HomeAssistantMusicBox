@@ -17,7 +17,9 @@ public class MusicBox implements Runnable {
     private final ActionService actionService;
     private final PlaybackService playbackService;
 
-    private static final Logger logger = LogUtil.getLogger("");
+    private Exception uncaughtException;
+
+    private static final Logger logger = LogUtil.getLogger(".MusicBox");
 
     public MusicBox(IdReader idReader, ActionService actionService, PlaybackService playbackService) {
         this.idReader = idReader;
@@ -27,15 +29,26 @@ public class MusicBox implements Runnable {
 
     @Override
     public void run() {
+        logger.info("Music box started");
         while (!Thread.interrupted()) {
             try {
                 Id id = idReader.read();
                 Action action = actionService.getAction(id);
                 playbackService.execute(action);
             } catch (PlaybackException e) {
-                logger.log(Level.SEVERE, e, () -> "Unhandled exception in MusicBox. Terminating thread with wrapped in Runtime exception");
-                throw new RuntimeException(e);
+                uncaughtException = e;
+                logger.log(Level.SEVERE, e, () -> "Unhandled exception in MusicBox. Terminating thread.");
+                Thread.currentThread().interrupt();
+                return;
+            } catch (InterruptedException e) {
+                logger.log(Level.SEVERE, e, () -> "Thread interrupted.");
+                Thread.currentThread().interrupt();
+                return;
             }
         }
+    }
+
+    public Exception getUncaughtException() {
+        return uncaughtException;
     }
 }

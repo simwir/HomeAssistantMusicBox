@@ -13,6 +13,7 @@ public class StandardReader implements IdReader {
     @Override
     public Id read() {
         logger.entering("StandardReader", "read");
+        System.out.print("Input>");
         String input = scanner.nextLine();
         logger.info(() -> String.format("Input: %s", input));
         return new Id(input);
