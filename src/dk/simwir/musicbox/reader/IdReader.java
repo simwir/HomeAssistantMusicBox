@@ -1,5 +1,5 @@
 package dk.simwir.musicbox.reader;
 
 public interface IdReader {
-    Id read();
+    Id read() throws InterruptedException;
 }

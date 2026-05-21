@@ -18,8 +18,10 @@ public class ArgumentParser {
     public static final String SONG_FILE = "song_file";
     public static final String URL_OPTION = "url";
     public static final String ENTITY = "entity";
+    public static final String PORT = "port";
+    public static final String V_1_0 = "1.0";
 
-    public record Arguments(String haToken, File actionFile, URL url, String entity) {}
+    public record Arguments(String haToken, File actionFile, URL url, String entity, int port) {}
 
     private static Arguments arguments;
     private static final Logger logger = LogUtil.getLogger("ArgumentParser");
@@ -30,7 +32,8 @@ public class ArgumentParser {
         options.addOption(getTokenOption())
                 .addOption(getActionFileOption())
                 .addOption(getUrlOption())
-                .addOption(getEntityOption());
+                .addOption(getEntityOption())
+                .addOption(getPortOption());
 
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = HelpFormatter.builder().get();
@@ -41,7 +44,7 @@ public class ArgumentParser {
             parseArguments(cmd);
             return arguments;
         } catch (ParseException e) {
-            formatter.printHelp("java -jar yourapp.jar", "header", options, "footer", true);
+            formatter.printHelp("java -jar home-assistant-music-box.jar", "header", options, "footer", true);
             throw e;
         }
     }
@@ -52,7 +55,8 @@ public class ArgumentParser {
                     getOptionValue(cmd, HA_TOKEN),
                     new File(getOptionValue(cmd, SONG_FILE)),
                     new URI(getOptionValue(cmd, URL_OPTION)).toURL(),
-                    getOptionValue(cmd, ENTITY)
+                    getOptionValue(cmd, ENTITY),
+                    cmd.getParsedOptionValue(PORT)
             );
 
         } catch (URISyntaxException | MalformedURLException e) {
@@ -80,6 +84,7 @@ public class ArgumentParser {
                 .argName("TOKEN")
                 .desc("Home Assistant token (required)")
                 .required()
+                .since(V_1_0)
                 .get();
     }
 
@@ -90,6 +95,7 @@ public class ArgumentParser {
                 .argName("FILE")
                 .desc("Path to file containing id to song mappings (required)")
                 .required()
+                .since(V_1_0)
                 .get();
     }
 
@@ -100,6 +106,7 @@ public class ArgumentParser {
                 .argName("URL")
                 .desc("URL of the Home Assistant instance (required)")
                 .required()
+                .since(V_1_0)
                 .get();
     }
 
@@ -110,6 +117,19 @@ public class ArgumentParser {
                 .argName("ENTITY")
                 .desc("The media player entity in Home assistant (required)")
                 .required()
+                .since(V_1_0)
+                .get();
+    }
+
+    private static Option getPortOption() {
+        return Option.builder("p")
+                .longOpt(PORT)
+                .hasArg()
+                .argName("PORT")
+                .type(Integer.class)
+                .desc("The port to listen for socket connections on.")
+                .required()
+                .since(V_1_0)
                 .get();
     }
 }

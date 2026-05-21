@@ -5,6 +5,7 @@ import dk.simwir.musicbox.logging.LogUtil;
 import dk.simwir.musicbox.reader.Id;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 public class ActionServiceImpl implements ActionService {
@@ -17,12 +18,13 @@ public class ActionServiceImpl implements ActionService {
     }
 
     @Override
-    public Action getAction(Id id) throws PlaybackException {
+    public Optional<Action> getAction(Id id) throws PlaybackException {
         Action action = actions.get(id);
         if (action == null) {
-            throw new PlaybackException(String.format("No action matching Id %s", id));
+            logger.info(() -> String.format("No action matching Id %s", id));
+            return Optional.empty();
         }
         logger.info(() -> String.format("Got action: %s from id: %s", action, id));
-        return action;
+        return Optional.of(action);
     }
 }

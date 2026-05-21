@@ -5,7 +5,10 @@ import dk.simwir.musicbox.homeassistant.HomeAssistantClientImpl;
 import dk.simwir.musicbox.logging.LogUtil;
 import dk.simwir.musicbox.playback.HomeAssistantPlaybackDevice;
 import dk.simwir.musicbox.playback.PlaybackServiceImpl;
+import dk.simwir.musicbox.reader.IdReader;
+import dk.simwir.musicbox.reader.SocketReader;
 import dk.simwir.musicbox.reader.StandardReader;
+import dk.simwir.musicbox.writer.SocketWriter;
 import org.apache.commons.cli.ParseException;
 
 import java.net.http.HttpClient;
@@ -20,18 +23,24 @@ private static final Logger logger = LogUtil.getLogger("Main");
 void main(String[] args) throws IOException, ParseException, InterruptedException {
     LogUtil.setLevel(Level.FINEST);
     ArgumentParser.Arguments arguments = ArgumentParser.parseArgs(args);
-    while (!isRetryExceeded()) {
-        MusicBox musicBox = getMusicBox(arguments);
-        Thread thread = new Thread(musicBox);
-        logger.info("Starting new MusicBox thread");
-        thread.start();
-        thread.join();
-        if (musicBox.getUncaughtException() != null) {
-            logger.log(Level.WARNING, "MusicBox existed with uncaught exception. Attempting restart");
-            retries.add(Instant.now());
-        } else {
-            logger.info("Music box exited normally. Not restarting");
-            break;
+    try (SocketWriter socketWriter = new SocketWriter(new StandardReader(), InetAddress.getLoopbackAddress(), arguments.port());
+         SocketReader socketReader = new SocketReader(arguments.port())) {
+        socketReader.start();
+        socketReader.waitForReady();
+        socketWriter.start();
+        while (!isRetryExceeded()) {
+            MusicBox musicBox = getMusicBox(arguments, socketReader);
+            Thread thread = new Thread(musicBox);
+            logger.info("Starting new MusicBox thread");
+            thread.start();
+            thread.join();
+            if (musicBox.getUncaughtException() != null) {
+                logger.log(Level.WARNING, "MusicBox existed with uncaught exception. Attempting restart");
+                retries.add(Instant.now());
+            } else {
+                logger.info("Music box exited normally. Not restarting");
+                break;
+            }
         }
     }
 }
@@ -43,9 +52,9 @@ private boolean isRetryExceeded() {
     return numRetries > RETRY_COUNT;
 }
 
-private static MusicBox getMusicBox(ArgumentParser.Arguments arguments) throws IOException {
+private static MusicBox getMusicBox(ArgumentParser.Arguments arguments, IdReader idReader) throws IOException {
     return new MusicBox(
-            new StandardReader(),
+            idReader,
             ActionFactory.getActionServiceFromFile(arguments.actionFile()),
             new PlaybackServiceImpl(new HomeAssistantPlaybackDevice(
                     new HomeAssistantClientImpl(

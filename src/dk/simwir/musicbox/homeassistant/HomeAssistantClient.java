@@ -9,5 +9,5 @@ import java.util.Optional;
 
 public interface HomeAssistantClient {
     Optional<JSONObject> post(String action, JSONObject requestPayload) throws HomeAssistantClientException, HttpStatusException, IOException, InterruptedException;
-    JSONObject get(String action);
+    JSONObject get(String action) throws HttpStatusException, IOException, InterruptedException, HomeAssistantClientException;
 }

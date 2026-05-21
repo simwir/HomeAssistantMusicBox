@@ -46,16 +46,29 @@ public class HomeAssistantClientImpl implements HomeAssistantClient {
                 .POST(HttpRequest.BodyPublishers.ofString(requestString))
                 .build();
 
-        HttpResponse<String> httpResponse = send(httpRequest);
+        return getJsonBody(send(httpRequest));
+    }
+
+    @Override
+    public JSONObject get(String action) throws HttpStatusException, IOException, InterruptedException, HomeAssistantClientException {
+        HttpRequest httpRequest = getRequestBuilder(action)
+                .GET()
+                .build();
+        JSONObject body = getJsonBody(send(httpRequest)).orElseThrow(() -> new HomeAssistantClientException("Get returned no body"));
+        logger.fine(() -> body.toString(2));
+        return body;
+    }
+
+    private static Optional<JSONObject> getJsonBody(HttpResponse<String> httpResponse) {
         String bodyString = httpResponse.body();
         Optional<JSONObject> responseBody;
         if (bodyString.equals("[]")) {
             responseBody = Optional.empty();
-            logger.info("Post completed with empty response body.");
+            logger.fine("Empty response body.");
         } else {
             try {
                 responseBody = Optional.of(new JSONObject(bodyString));
-                logger.info(() -> String.format("Post completed with response body: %s",
+                logger.fine(() -> String.format("Completed with response body: %s",
                         responseBody.get().toString(2)));
             } catch (JSONException e) {
                 throw new JsonBodyException(String.format("Response body not valid JSON. Body %s", bodyString), e, bodyString);
@@ -75,11 +88,6 @@ public class HomeAssistantClientImpl implements HomeAssistantClient {
             throw new HttpStatusException(statusCode);
         }
         return httpResponse;
-    }
-
-    @Override
-    public JSONObject get(String action) {
-        throw new NotImplementedException();
     }
 
     private URI getUri(String action) {

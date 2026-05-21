@@ -8,6 +8,7 @@ import dk.simwir.musicbox.action.ActionService;
 import dk.simwir.musicbox.playback.PlaybackService;
 import dk.simwir.musicbox.reader.Id;
 
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -33,8 +34,9 @@ public class MusicBox implements Runnable {
         while (!Thread.interrupted()) {
             try {
                 Id id = idReader.read();
-                Action action = actionService.getAction(id);
-                playbackService.execute(action);
+                Optional<Action> action = actionService.getAction(id);
+                if (action.isEmpty()) continue;
+                playbackService.execute(action.get());
             } catch (PlaybackException e) {
                 uncaughtException = e;
                 logger.log(Level.SEVERE, e, () -> "Unhandled exception in MusicBox. Terminating thread.");
