@@ -1,4 +1,5 @@
-FROM eclipse-temurin:21-jdk AS builder
+# Stage 1: Builder
+FROM maven:3.9-eclipse-temurin-21 AS builder
 
 WORKDIR /app
 
@@ -6,9 +7,14 @@ COPY . .
 
 RUN mvn package -DskipTests
 
+# Stage 2: Runtime
 FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
+
+ARG VERSION
+ARG BUILD_DATE
+ARG GIT_COMMIT
 
 COPY --from=builder /app/target/*.jar app.jar
 
