@@ -9,6 +9,8 @@ GIT_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 
 if docker buildx build \
   --load \
+  --debug \
+  --progress=plain \
   --build-arg VERSION="$VERSION" \
   --build-arg BUILD_DATE="$BUILD_DATE" \
   --build-arg GIT_COMMIT="$GIT_COMMIT" \
