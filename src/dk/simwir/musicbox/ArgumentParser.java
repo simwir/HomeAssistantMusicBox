@@ -56,7 +56,7 @@ public class ArgumentParser {
                     new File(getOptionValue(cmd, SONG_FILE)),
                     new URI(getOptionValue(cmd, URL_OPTION)).toURL(),
                     getOptionValue(cmd, ENTITY),
-                    cmd.getParsedOptionValue(PORT)
+                    Integer.parseInt(getOptionValue(cmd, PORT))
             );
 
         } catch (URISyntaxException | MalformedURLException e) {
@@ -68,7 +68,16 @@ public class ArgumentParser {
     private static String getOptionValue(CommandLine cmd, String optionName) throws ParseException {
         String optionValue = cmd.getOptionValue(optionName);
         if (isNullOrEmpty(optionValue)) {
-            throw new ParseException(optionName + " is empty");
+            optionValue = System.getenv(optionName);
+            if (isNullOrEmpty(optionValue)) {
+                throw new ParseException(optionName + " is empty");
+            } else {
+                String finalOptionValue = optionValue;
+                logger.info(() -> String.format("Parsed option %s:%s from environment variables", optionName, finalOptionValue));
+            }
+        } else {
+            String finalOptionValue1 = optionValue;
+            logger.info(() -> String.format("Parsed option %s:%s from command line", optionName, finalOptionValue1));
         }
         return optionValue;
     }
