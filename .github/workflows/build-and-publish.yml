@@ -1,0 +1,68 @@
+name: Build and Publish Docker Image
+
+on:
+  push:
+    branches: [ "master" ]
+    tags: [ 'v*.*.*' ]
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/homeassistant-musicbox
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Extracts metadata (tags, labels) based on Git events automatically
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,format=short
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Log in to the Container registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Docker image
+        env:
+          DOCKER_METADATA_OUTPUT_TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          chmod +x ./build.sh
+          
+          # Determine export action (--load for local test in PR, --push for registry)
+          ACTION_FLAG="--load"
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            ACTION_FLAG="--push"
+          fi
+
+          TAG_ARGS=$(echo "$DOCKER_METADATA_OUTPUT_TAGS" | xargs -I {} echo "-t {}" | xargs)
+
+          # Execute build script passing variables and dynamic arguments
+          VERSION="${{ steps.meta.outputs.version }}" \
+          GIT_COMMIT="${{ github.sha }}" \
+          ./build.sh $ACTION_FLAG $TAG_ARGS

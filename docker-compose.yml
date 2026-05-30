@@ -1,0 +1,11 @@
+services:
+  musicbox:
+    image: homeassistant-musicbox:latest
+    container_name: ha-musicbox
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "4775:4775"
+    volumes:
+      - ./src/main/resources/song1.csv:/data/songs.csv:ro
