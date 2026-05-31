@@ -20,8 +20,10 @@ public class ArgumentParser {
     public static final String ENTITY = "entity";
     public static final String PORT = "port";
     public static final String V_1_0 = "1.0";
+    public static final String STDIN = "STDIN";
 
-    public record Arguments(String haToken, File actionFile, URL url, String entity, int port) {}
+    public record Arguments(String haToken, File actionFile, URL url, String entity, int port, boolean stdin) {
+    }
 
     private static Arguments arguments;
     private static final Logger logger = LogUtil.getLogger("ArgumentParser");
@@ -33,7 +35,8 @@ public class ArgumentParser {
                 .addOption(getActionFileOption())
                 .addOption(getUrlOption())
                 .addOption(getEntityOption())
-                .addOption(getPortOption());
+                .addOption(getPortOption())
+                .addOption(getStdInOption());
 
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = HelpFormatter.builder().get();
@@ -52,11 +55,12 @@ public class ArgumentParser {
     private static void parseArguments(CommandLine cmd) throws ParseException {
         try {
             arguments = new Arguments(
-                    getOptionValue(cmd, HA_TOKEN),
-                    new File(getOptionValue(cmd, SONG_FILE)),
-                    new URI(getOptionValue(cmd, URL_OPTION)).toURL(),
-                    getOptionValue(cmd, ENTITY),
-                    Integer.parseInt(getOptionValue(cmd, PORT))
+                    getOptionValue(cmd, HA_TOKEN, true),
+                    new File(getOptionValue(cmd, SONG_FILE, false)),
+                    new URI(getOptionValue(cmd, URL_OPTION, false)).toURL(),
+                    getOptionValue(cmd, ENTITY, false),
+                    Integer.parseInt(getOptionValue(cmd, PORT, false)),
+                    cmd.hasOption(STDIN)
             );
 
         } catch (URISyntaxException | MalformedURLException e) {
@@ -65,18 +69,18 @@ public class ArgumentParser {
         }
     }
 
-    private static String getOptionValue(CommandLine cmd, String optionName) throws ParseException {
+    private static String getOptionValue(CommandLine cmd, String optionName, boolean sensitive) throws ParseException {
         String optionValue = cmd.getOptionValue(optionName);
         if (isNullOrEmpty(optionValue)) {
-            optionValue = System.getenv(optionName);
+            optionValue = System.getenv(optionName.toUpperCase());
             if (isNullOrEmpty(optionValue)) {
                 throw new ParseException(optionName + " is empty");
             } else {
-                String finalOptionValue = optionValue;
+                String finalOptionValue = sensitive ? "<REDACTED>" : optionValue;
                 logger.info(() -> String.format("Parsed option %s:%s from environment variables", optionName, finalOptionValue));
             }
         } else {
-            String finalOptionValue1 = optionValue;
+            String finalOptionValue1 = sensitive ? "<REDACTED" : optionValue;
             logger.info(() -> String.format("Parsed option %s:%s from command line", optionName, finalOptionValue1));
         }
         return optionValue;
@@ -92,7 +96,6 @@ public class ArgumentParser {
                 .hasArg()
                 .argName("TOKEN")
                 .desc("Home Assistant token (required)")
-                .required()
                 .since(V_1_0)
                 .get();
     }
@@ -103,7 +106,6 @@ public class ArgumentParser {
                 .hasArg()
                 .argName("FILE")
                 .desc("Path to file containing id to song mappings (required)")
-                .required()
                 .since(V_1_0)
                 .get();
     }
@@ -114,7 +116,6 @@ public class ArgumentParser {
                 .hasArg()
                 .argName("URL")
                 .desc("URL of the Home Assistant instance (required)")
-                .required()
                 .since(V_1_0)
                 .get();
     }
@@ -125,7 +126,6 @@ public class ArgumentParser {
                 .hasArg()
                 .argName("ENTITY")
                 .desc("The media player entity in Home assistant (required)")
-                .required()
                 .since(V_1_0)
                 .get();
     }
@@ -137,8 +137,15 @@ public class ArgumentParser {
                 .argName("PORT")
                 .type(Integer.class)
                 .desc("The port to listen for socket connections on.")
-                .required()
                 .since(V_1_0)
                 .get();
     }
+     private static Option getStdInOption() {
+        return Option.builder()
+                .longOpt(STDIN)
+                .hasArg(false)
+                .desc("Should the program listen on stdin for messages. Intended for debugging.")
+                .since(V_1_0)
+                .get();
+     }
 }

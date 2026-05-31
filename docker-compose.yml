@@ -8,4 +8,4 @@ services:
     ports:
       - "4775:4775"
     volumes:
-      - ./src/main/resources/song1.csv:/data/songs.cvs:ro
+      - ./src/main/resources/song1.csv:/data/songs.csv:ro

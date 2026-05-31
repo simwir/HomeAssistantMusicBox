@@ -35,7 +35,9 @@ public class Main {
              SocketReader socketReader = new SocketReader(arguments.port())) {
             socketReader.start();
             socketReader.waitForReady();
-            socketWriter.start();
+            if (arguments.stdin()) {
+                socketWriter.start();
+            }
             while (!isRetryExceeded()) {
                 MusicBox musicBox = getMusicBox(arguments, socketReader);
                 Thread thread = new Thread(musicBox);
