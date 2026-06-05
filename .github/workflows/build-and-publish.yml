@@ -38,7 +38,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
             type=sha,format=short
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
 
       - name: Log in to the Container registry
         if: github.event_name != 'pull_request'
@@ -62,7 +62,11 @@ jobs:
 
           TAG_ARGS=$(echo "$DOCKER_METADATA_OUTPUT_TAGS" | xargs -I {} echo "-t {}" | xargs)
 
+          # Define standard GitHub Actions caching parameters for Buildx
+          CACHE_ARGS="--cache-from=type=gha --cache-to=type=gha,mode=max"
+         
+
           # Execute build script passing variables and dynamic arguments
           VERSION="${{ steps.meta.outputs.version }}" \
           GIT_COMMIT="${{ github.sha }}" \
-          ./build.sh $ACTION_FLAG $TAG_ARGS
+          ./build.sh $ACTION_FLAG $TAG_ARGS $CACHE_ARGS
