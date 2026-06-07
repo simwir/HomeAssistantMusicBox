@@ -38,6 +38,7 @@ public class MusicBox implements Runnable {
                 if (action.isEmpty()) continue;
                 playbackService.execute(action.get());
             } catch (PlaybackException e) {
+                // TODO: Expand scope to all unhandled exception instead of just Playback exceptions.
                 uncaughtException = e;
                 logger.log(Level.SEVERE, e, () -> "Unhandled exception in MusicBox. Terminating thread.");
                 Thread.currentThread().interrupt();
