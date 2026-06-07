@@ -5,6 +5,7 @@ import dk.simwir.musicbox.exceptions.HttpStatusException;
 import dk.simwir.musicbox.exceptions.JsonBodyException;
 import dk.simwir.musicbox.exceptions.NotImplementedException;
 import dk.simwir.musicbox.logging.LogUtil;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -60,20 +61,32 @@ public class HomeAssistantClientImpl implements HomeAssistantClient {
     }
 
     private static Optional<JSONObject> getJsonBody(HttpResponse<String> httpResponse) {
-        String bodyString = httpResponse.body();
-        Optional<JSONObject> responseBody;
+        String bodyString = httpResponse.body().trim();
+        Optional<JSONObject> responseBody = Optional.empty();
         if (bodyString.equals("[]")) {
             responseBody = Optional.empty();
             logger.fine("Empty response body.");
-        } else {
+        } else if (bodyString.startsWith("{")) {
             try {
                 responseBody = Optional.of(new JSONObject(bodyString));
-                logger.fine(() -> String.format("Completed with response body: %s",
-                        responseBody.get().toString(2)));
+            } catch (JSONException e) {
+                throw new JsonBodyException(String.format("Response body not valid JSON. Body %s", bodyString), e, bodyString);
+            }
+        } else if (bodyString.startsWith("[")) {
+            try {
+                JSONArray jsonArray = new JSONArray(bodyString);
+                if (jsonArray.length() != 1) {
+                    logger.warning(() -> String.format("Response is json array, with not exactly 1 element. Num elements: %d. Body: %s", jsonArray.length(), jsonArray.toString(1)));
+                }
+                responseBody = Optional.of(jsonArray.getJSONObject(0));
             } catch (JSONException e) {
                 throw new JsonBodyException(String.format("Response body not valid JSON. Body %s", bodyString), e, bodyString);
             }
         }
+
+        responseBody.ifPresent(finalResponseBody -> logger.fine(() -> String.format("Completed with response body: %s",
+                finalResponseBody.toString(2))));
+
         return responseBody;
     }
 
