@@ -6,7 +6,7 @@
 
     <groupId>dk.simwir</groupId>
     <artifactId>home-assistant-music-box</artifactId>
-    <version>0.1.1-snapshot</version>
+    <version>0.1.1</version>
     <name>Home Assistant music box</name>
 
     <properties>
